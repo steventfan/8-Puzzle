@@ -2,81 +2,106 @@
 #include <string>
 #include <vector>
 
-const unsigned int solution[3][3] = {{1, 2, 3},{4, 5, 6},{7, 8, 0}};
+unsigned int length = 3;
 
 class Node;
 
 class Puzzle
 {
     public:
-        unsigned int puzzle[3][3];
+        std::vector<std::vector<int>> initial;
+        unsigned int depth;
+        unsigned int queue;
+        unsigned int total;
+
+        Puzzle();
+        ~Puzzle();
+        Node * search(unsigned int);
+    private:
         std::vector<Node *> storage;
-        Puzzle():puzzle{{9, 9, 9},{9, 9, 9},{9, 9, 9}} {};
-        bool solve(unsigned int &);
-        Node * search(const unsigned int);
 };
 
 class Node
 {
     friend class Puzzle;
-    private:
+    public:
+        std::vector<std::vector<int>> state;
         std::string operation;
         unsigned int cost;
         unsigned int heuristic;
-        unsigned int array[3][3];
         Node * parent;
-        Node(const unsigned int, const std::string, unsigned int, Node *);
-        unsigned int calculate(unsigned int);// ***** Calculate heuristic *****
+    private:
+        Node(unsigned int, std::vector<std::vector<int>>, std::string, unsigned int, Node *);
 };
 
-bool Puzzle::solve(unsigned int & option)
+Puzzle::Puzzle():initial(length ,std::vector<int>(length))
 {
-    switch(option)
+    for(unsigned int i = 0; i < length; i++)
     {
-        case 1:
-            std::cout << "Solving using Uniform Cost Search" << std::endl;
-
-            break;
-        case 2:
-            std::cout << "Solving using A* with Misplaced Tile Heuristic" << std::endl;
-
-            break;
-        case 3:
-            std::cout << "Solving using A* with Manhattan Distance Heuristic" << std::endl;
-
-            break;
-        default:
-            return false;
+        for(unsigned int j = 0; j < length; j++)
+        {
+            initial.at(i).at(j) = -1;
+        }
     }
-    if(!search(option))
-    {
-        std::cout << "No Solution Found\n" << std::endl;
-    }
-    while(1)
-    {
-
-    }
-
-    return true;
+    depth = 0;
+    queue = 0;
+    total = 0;
 }
 
-Node * Puzzle::search(const unsigned int option)
+Puzzle::~Puzzle()
 {
-    std::vector<Node *> nodes;
-    std::vector<Node *> removal;
-
-    nodes.push_back(new Node(option, "none", 0, 0));
-    while(1)
+    while(!storage.empty())
     {
-        if(nodes.empty())
+        delete storage.back();
+
+        storage.pop_back();
+    }
+}
+
+Node * Puzzle::search(unsigned int option)
+{
+    if(option == 1)
+    {
+        std::cout << "Solving using Uniform Cost Search\n";
+    }
+    else if(option == 2)
+    {
+        std::cout << "Solving using A* with Misplaced Tile Heuristic\n";
+    }
+    else
+    {
+        std::cout << "Solving using A* with Manhattan Distance Heuristic\n";
+    }
+    std::cout << std::endl;
+
+    std::vector<Node *> nodes(1, new Node(option, initial, "", 0, 0));
+    std::vector<std::vector<int>> goal(length, std::vector<int>(length));
+    unsigned int count = 1;
+
+    for(unsigned int i = 0; i < length; i++)
+    {
+        for(unsigned int j = 0; j < length; j++)
         {
-            break;
+            if(count < length * length)
+            {
+                goal.at(i).at(j) = count;
+            }
+            else
+            {
+                goal.at(i).at(j) = 0;
+            }
+        }
+    }
+    do
+    {
+        if(queue < nodes.size())
+        {
+            queue = nodes.size();
         }
 
-        unsigned int i;
         unsigned int min = 0;
 
-        for(i = 1; i < nodes.size(); i++)
+        for(unsigned int i = 1; i < length; i++)
         {
             if(nodes.at(i)->cost + nodes.at(i)->heuristic < nodes.at(min)->cost + nodes.at(min)->heuristic)
             {
@@ -86,280 +111,241 @@ Node * Puzzle::search(const unsigned int option)
 
         Node * node = nodes.at(min);
 
-        storage.push_back(node);
         nodes.erase(nodes.begin() + min);
-
-        unsigned int j;
-
-        for(i = 0; i < 3; i++)
+        storage.push_back(node);
+        if(node->state == goal)
         {
-            for(j = 0; j < 3; j++)
+            while(!nodes.empty())
             {
-                if(node->array[i][j] != solution[i][j])
-                {
-                    break;
-                }
+                storage.push_back(nodes.back());
+                nodes.pop_back();
             }
-        }
-        if(i >= 3 && j >= 3)
-        {
+
             return node;
         }
-        for(i = 0; i < 3; i++)
+        total++;
+
+        unsigned int i;
+        unsigned int j;
+
+        for(i = 0; i < length; i++)
         {
-            for(j = 0; j < 3; j++)
+            for(j = 0; j < length; j++)
             {
-                if(node->array[i][j] == 0)
+                if(node->state.at(i).at(j) == 0)
                 {
                     break;
                 }
             }
-            if(j < 3)
+            if(j < length)
             {
                 break;
             }
         }
         if(i > 0)
         {
-            nodes.push_back(new Node(option, "up", node->cost, node));
+            nodes.push_back(new Node(option, node->state, "up", node->cost, node));
         }
-        if(i < 2)
+        if(i < length - 1)
         {
-            nodes.push_back(new Node(option, "down", node->cost, node));
+            nodes.push_back(new Node(option, node->state, "down", node->cost, node));
         }
         if(j > 0)
         {
-            nodes.push_back(new Node(option, "left", node->cost, node));
+            nodes.push_back(new Node(option, node->state, "left", node->cost, node));
         }
-        if(j < 2)
+        if(j < length - 1)
         {
-            nodes.push_back(new Node(option, "right", node->cost, node));
+            nodes.push_back(new Node(option, node->state, "right", node->cost, node));
         }
-    }
+    } while (!nodes.empty());
 
     return 0;
 }
 
-Node::Node(const unsigned int option, const std::string operation, unsigned int cost, Node * parent)
+Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string operation, unsigned int cost, Node * parent):state(length, std::vector<int>(length))
 {
-    this->operation = operation;
-    if(operation != "none")
-    {
-        unsigned int i;
-        unsigned int j;
+    unsigned int i;
+    unsigned int j;
 
-        for(i = 0; i < 3; i++)
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < length; j++)
         {
-            for(j = 0; j < 3; j++)
-            {
-                if(array[i][j] == 0)
-                {
-                    break;
-                }
-            }
-            if(j < 3)
+            if(state.at(i).at(j) == 0)
             {
                 break;
             }
         }
-        if(operation == "up")
+        if(j < length)
         {
-            array[i][j] = array[i - 1][j];
-            array[i - 1][j] = 0;
-        }
-        else if(operation == "down")
-        {
-            array[i][j] = array[i + 1][j];
-            array[i + 1][j] = 0;
-        }
-        else if(operation == "left")
-        {
-            array[i][j] = array[i][j - 1];
-            array[i][j - 1] = 0;
-        }
-        else if(operation == "right")
-        {
-            array[i][j] = array[i][j + 1];
-            array[i][j + 1] = 0;
+            break;
         }
     }
+    if(operation == "up")
+    {
+        state.at(i).at(j) = state.at(i - 1).at(j);
+        state.at(i - 1).at(j) = 0;
+    }
+    else if(operation == "down")
+    {
+        state.at(i).at(j) = state.at(i + 1).at(j);
+        state.at(i + 1).at(j) = 0;
+    }
+    else if(operation == "left")
+    {
+        state.at(i).at(j) = state.at(i).at(j - 1);
+        state.at(i).at(j - 1) = 0;
+    }
+    else if(operation == "right")
+    {
+        state.at(i).at(j) = state.at(i).at(j + 1);
+        state.at(i).at(j + 1) = 0;
+    }
+    this->state = state;
+    this->operation = operation;
     if(parent != 0)
     {
         cost++;
     }
     this->cost = cost;
 
+    unsigned int goal[length][length];
+    unsigned int count = 1;
+
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < length; j++)
+        {
+            if(count < length * length)
+            {
+                goal[i][j] = count;
+            }
+            else
+            {
+                goal[i][j] = 0;
+            }
+        }
+    }
+
     unsigned int heuristic = 0;
 
-    switch(option)
+    if(option == 2)
     {
-        case 2:
-            for(unsigned int i = 0; i < 3; i++)
+        for(i = 0; i < length; i++)
+        {
+            for(j = 0; j < length; j++)
             {
-                for(unsigned int j = 0; j < 3; j++)
+                if(this->state.at(i).at(j) != goal[i][j])
                 {
-                    if(array[i][j] != solution[i][j])
-                    {
-                        heuristic++;
-                    }
+                    heuristic++;
                 }
             }
-
-            break;
-        case 3:
-            for(unsigned int i = 0; i < 3; i++)
+        }
+    }
+    else if(option == 3)
+    {
+        for(i = 0; i < length; i++)
+        {
+            for(j = 0; j < length; j++)
             {
-                for(unsigned int j = 0; j < 3; j++)
+                for(unsigned int k = 0; k < length; k++)
                 {
-                    for(unsigned int k = 0; k < 3; k++)
+                    for(unsigned int l = 0; l < length; l++)
                     {
-                        for(unsigned int l = 0; l < 3; l++)
+                        if(goal[i][j] == this->state.at(k).at(l))
                         {
-                            if(solution[i][j] == array[k][l])
+                            int row = i - k;
+                            int column = j - l;
+                            if(row < 0)
                             {
-                                int row = i - k;
-                                int column = j - l;
-
-                                if(row < 0)
-                                {
-                                    row *= -1;
-                                }
-                                if(column < 0)
-                                {
-                                    column *= -1;
-                                }
-                                heuristic += row + column;
+                                row *= -1;
+                            
                             }
+                            if(column < 0)
+                            {
+                                column *= -1;
+                            }
+                            heuristic += row + column;
                         }
                     }
                 }
             }
-
-            break;
-        default:
-            break;
+        }
     }
     this->heuristic = heuristic;
     this->parent = parent;
 }
 
-unsigned int Node::calculate(unsigned int option)
-{
-    unsigned int heuristic = 0;
-
-    switch(option)
-    {
-        case 2:
-            for(unsigned int i = 0; i < 3; i++)
-            {
-                for(unsigned int j = 0; j < 3; j++)
-                {
-                    if(solution[i][j] != array[i][j])
-                    {
-                        heuristic++;
-                    }
-                }
-            }
-
-            break;
-        case 3:
-            for(unsigned int i = 0; i < 3; i++)
-            {
-                for(unsigned int j = 0; j < 3; j++)
-                {
-                    for(unsigned int k = 0; k < 3; k++)
-                    {
-                        for(unsigned int l = 0; l < 3; l++)
-                        {
-                            if(solution[i][j] == array[k][l])
-                            {
-                                int row = i - k;
-                                int column = j - l;
-
-                                if(row < 0)
-                                {
-                                    row *= -1;
-                                }
-                                if(column < 0)
-                                {
-                                    column *= -1;
-                                }
-                                heuristic += row + column;
-                            }
-                        }
-                    }
-                }
-            }
-            break;
-        default:
-            heuristic = 1;
-    }
-
-    return heuristic;
-}
-
 int main()
 {
-    std::cout << "----- Welcome to the 8 Puzzle Solver -----" << std::endl;
+    std::cout << "----- Welcome to the Puzzle Solver -----\n" << std::endl;
 
-    while(1)
+    bool status = true;
+
+    while(status)
     {
         Puzzle * puzzle = new Puzzle();
 
-        std::cout << "----- Puzzle Set Up -----\n" << std::endl;
-        for(unsigned int i = 0; i < 3; i++)// ***** Initialize puzzle *****
+        for(unsigned int i = 0; i < length; i++)// ***** Initialize puzzle *****
         {
-            for(int j = 0; j < 3; j++)
+            for(int j = 0; j < length; j++)
             {
-                unsigned int value;
-
-                for(unsigned int k = 0; k < 3; k++)
+                for(unsigned int k = 0; k < length; k++)// ***** Check for duplicate values *****
                 {
-                    for(unsigned int l = 0; l < 3; l++)
+                    for(unsigned int l = 0; l < length; l++)
                     {
                         std::cout << '[';
-                        if(puzzle->puzzle[k][l] == 9)
+                        if(puzzle->initial.at(k).at(l) == -1 )
+                        {
+                            std::cout << '-';
+                        }
+                        else if(puzzle->initial.at(k).at(l) == 0)
                         {
                             std::cout << ' ';
                         }
                         else
                         {
-                            std::cout << puzzle->puzzle[k][l];
+                            std::cout << puzzle->initial.at(k).at(l);
                         }
                         std::cout << ']';
                     }
                     std::cout << std::endl;
                 }
 
-                std::cout << "[Puzzle Initialization]\n" << "Input a value from 1 to 8 for integers or 0 for blank" << std::endl << "> ";
+                unsigned int value;
+
+                std::cout << "----- Puzzle Initialization -----\n";
+                std::cout << "Input a value from 1 to " << length * length - 1 << " for integers or 0 for blank" << std::endl;
+                std::cout << "> ";
                 std::cin >> value;
-                if(value <= 8)
+                if(value < length * length)
                 {
                     unsigned int k;
                     unsigned int l;
 
-                    for(k = 0; k <= i; k++)// ***** Check for duplicate values *****
+                    for(k = 0; k < length; k++)
                     {
-                        for(l = 0; l < 3; l++)
+                        for(l = 0; l < length; l++)
                         {
-                            if(puzzle->puzzle[k][l] == value)
+                            if(puzzle->initial.at(k).at(l) == value)
                             {
                                 break;
                             }
                         }
-                        if(l < 3)
+                        if(l < length)
                         {
                             break;
                         }
                     }
-                    if(l < 3)
+                    if(l < length)
                     {
                         std::cout << "[Error] Duplicate Value\n";
                         j--;
                     }
                     else
                     {
-                        puzzle->puzzle[i][j] = value;
+                        puzzle->initial.at(i).at(j) = value;
                     }
                 }
                 else
@@ -370,18 +356,122 @@ int main()
                 std::cout << std::endl;
             }
         }
-        std::cout << std::endl;
-        while(1)
-        {
-            unsigned int value;
 
-            std::cout << "[Enter Solver Algorithm]\n" << "[1] Uniform Cost Search\n" << "[2] A* with Misplaced Tile Heuristic\n" << "[3] A* with Manhattan Distance Heuristic" << std::endl << "> ";
-            std::cin >> value;
-            if(!puzzle->solve(value))
+        unsigned int option;
+
+        while(option)
+        {
+            std::cout << "----- Enter Solver Algorithm -----\n";
+            std::cout << "[1] Uniform Cost Search\n";
+            std::cout << "[2] A* with Misplaced Tile Heuristic\n";
+            std::cout << "[3] A* with Manhattan Distance Heuristic" << std::endl;
+            std::cout << "> ";
+            std::cin >> option;
+            if(option != 0 && option < 4)
+            {
+                Node * goal = puzzle->search(option);
+
+                if(goal)
+                {
+                    std::cout << "[Solution Found]\n" << std::endl;
+                }
+                else
+                {
+                    std::cout << "[No Solution]\n" << std::endl;
+                }
+                while(1)
+                {
+                    std::cout << "----- Enter Option -----\n";
+                    std::cout << "[1] Output Solution Trace (if applicable)\n";
+                    std::cout << "[2] Choose Another Search Algorithm\n";
+                    std::cout << "[3] Start New Puzzle\n";
+                    std::cout << "[4] Exit Program" << std::endl;
+                    std::cout << "> ";
+                    std::cin >> option;
+                    if(option == 1)
+                    {
+                        if(goal)
+                        {
+                            std::vector<Node *> trace(1, goal);
+                            Node * pointer = goal->parent;
+
+                            while(trace.back()->parent != 0)
+                            {
+                                trace.push_back(pointer);
+                                pointer = pointer->parent;
+                            }
+                            puzzle->depth = trace.size();
+                            std::cout << std::endl;
+                            while(!trace.empty())
+                            {
+                                if(trace.back()->parent == 0)
+                                {
+                                    std::cout << "Initial State:" << std::endl;
+                                }
+                                else
+                                {
+                                    std::cout << "Move blank " << trace.back()->operation << std::endl;
+                                    std::cout << "Expanding state with g(n) = " << trace.back()->cost << " and h(n) = " << trace.back()->heuristic << ':' << std::endl;
+                                    for(unsigned int i = 0; i < length; i++)
+                                    {
+                                        for(unsigned int j = 0; j < length; j++)
+                                        {
+                                            std::cout << '[';
+                                            if(trace.back()->state.at(i).at(j) == 0)
+                                            {
+                                                std::cout << '0';
+                                            }
+                                            else
+                                            {
+                                                std::cout << trace.back()->state.at(i).at(j);
+                                            }
+                                            std::cout << ']';
+                                        }
+                                        std::cout << std::endl;
+                                    }
+                                }
+                                trace.pop_back();
+                            }
+                            std::cout << std::endl << "The depth of the goal node is " << puzzle->depth;
+                        }
+                        else
+                        {
+                            std::cout << "Solution trace unavailable due to no solution\n";
+                        }
+                        std::cout << "The maximum number of nodes in the queue at any one time was " << puzzle->queue << " nodes" << std::endl;
+                        std::cout << "The search algorithm expanded a total of " << puzzle->total << " nodes";
+                    }
+                    else if(option == 2)
+                    {
+                        break;
+                    }
+                    else if(option == 3)
+                    {
+                        option = 0;
+
+                        break;
+                    }
+                    else if(option == 4)
+                    {
+                        option = 0;
+                        status = false;
+
+                        break;
+                    }
+                    else
+                    {
+                        std::cout << "[Error] Invalid Input\n" << std::endl;
+                    }
+                }
+            }
+            else
             {
                 std::cout << "[Error] Invalid Input\n" << std::endl;
+                option = -1;
             }
         }
+
+        delete puzzle;
     }
 
     return 0;
