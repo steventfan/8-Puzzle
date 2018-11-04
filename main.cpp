@@ -13,12 +13,11 @@ class Puzzle
         unsigned int depth;
         unsigned int queue;
         unsigned int total;
+        std::vector<Node *> duplicate;
 
         Puzzle();
         ~Puzzle();
         Node * search(unsigned int);
-    private:
-        std::vector<Node *> storage;
 };
 
 class Node
@@ -43,18 +42,15 @@ Puzzle::Puzzle():initial(length ,std::vector<int>(length))
             initial.at(i).at(j) = -1;
         }
     }
-    depth = 0;
-    queue = 0;
-    total = 0;
 }
 
 Puzzle::~Puzzle()
 {
-    while(!storage.empty())
+    while(!duplicate.empty())
     {
-        delete storage.back();
+        delete duplicate.back();
 
-        storage.pop_back();
+        duplicate.pop_back();
     }
 }
 
@@ -75,6 +71,9 @@ Node * Puzzle::search(unsigned int option)
     std::cout << std::endl;
 
     std::vector<Node *> nodes(1, new Node(option, initial, "", 0, 0));
+
+    duplicate.push_back(nodes.back());
+
     std::vector<std::vector<int>> goal(length, std::vector<int>(length));
     unsigned int count = 1;
 
@@ -90,8 +89,17 @@ Node * Puzzle::search(unsigned int option)
             {
                 goal.at(i).at(j) = 0;
             }
+            count++;
         }
     }
+    if(nodes.back()->state == goal)
+    {
+        queue = 1;
+
+        return nodes.back();
+    }
+    queue = 0;
+    total = 0;
     do
     {
         if(queue < nodes.size())
@@ -99,31 +107,9 @@ Node * Puzzle::search(unsigned int option)
             queue = nodes.size();
         }
 
-        unsigned int min = 0;
+        Node * node = nodes.front();
 
-        for(unsigned int i = 1; i < length; i++)
-        {
-            if(nodes.at(i)->cost + nodes.at(i)->heuristic < nodes.at(min)->cost + nodes.at(min)->heuristic)
-            {
-                min = i;
-            }
-        }
-
-        Node * node = nodes.at(min);
-
-        nodes.erase(nodes.begin() + min);
-        storage.push_back(node);
-        if(node->state == goal)
-        {
-            while(!nodes.empty())
-            {
-                storage.push_back(nodes.back());
-                nodes.pop_back();
-            }
-
-            return node;
-        }
-        total++;
+        nodes.erase(nodes.begin());
 
         unsigned int i;
         unsigned int j;
@@ -142,21 +128,194 @@ Node * Puzzle::search(unsigned int option)
                 break;
             }
         }
-        if(i > 0)
+
+        std::vector<std::vector<int>> state = node->state;
+        unsigned int k;
+        Node * temp;
+
+        total++;
+        if(i > 0 && node->operation != "down")
         {
-            nodes.push_back(new Node(option, node->state, "up", node->cost, node));
+            state.at(i).at(j) = state.at(i - 1).at(j);
+            state.at(i - 1).at(j) = 0;
+            for(k = 0; k < duplicate.size(); k++)
+            {
+                if(state == duplicate.at(k)->state)
+                {
+                    break;
+                }
+            }
+            if(k == duplicate.size())
+            {
+                temp = new Node(option, state, "up", node->cost, node);
+
+                for(k = 0; k < nodes.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == nodes.size() && nodes.size() > 0)
+                {
+                    k--;
+                }
+                nodes.insert(nodes.begin() + k, temp);
+                for(k = 0; k < duplicate.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == duplicate.size())
+                {
+                    k--;
+                }
+                duplicate.insert(duplicate.begin() + k, temp);
+                if(temp->state == goal)
+                {
+                    return temp;
+                }
+            }
+            state = node->state;
         }
-        if(i < length - 1)
+        if(i < length - 1 && node->operation != "up")
         {
-            nodes.push_back(new Node(option, node->state, "down", node->cost, node));
+            state.at(i).at(j) = state.at(i + 1).at(j);
+            state.at(i + 1).at(j) = 0;
+            for(k = 0; k < duplicate.size(); k++)
+            {
+                if(state == duplicate.at(k)->state)
+                {
+                    break;
+                }
+            }
+            if(k == duplicate.size())
+            {
+                temp = new Node(option, state, "down", node->cost, node);
+
+                for(k = 0; k < nodes.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == nodes.size() && nodes.size() > 0)
+                {
+                    k--;
+                }
+                nodes.insert(nodes.begin() + k, temp);
+                for(k = 0; k < duplicate.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == duplicate.size())
+                {
+                    k--;
+                }
+                duplicate.insert(duplicate.begin() + k, temp);
+                if(temp->state == goal)
+                {
+                    return temp;
+                }
+            }
+            state = node->state;
         }
-        if(j > 0)
+        if(j > 0 && node->operation != "right")
         {
-            nodes.push_back(new Node(option, node->state, "left", node->cost, node));
+            state.at(i).at(j) = state.at(i).at(j - 1);
+            state.at(i).at(j - 1) = 0;
+            for(k = 0; k < duplicate.size(); k++)
+            {
+                if(state == duplicate.at(k)->state)
+                {
+                    break;
+                }
+            }
+            if(k == duplicate.size())
+            {
+                temp = new Node(option, state, "left", node->cost, node);
+
+                for(k = 0; k < nodes.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == nodes.size() && nodes.size() > 0)
+                {
+                    k--;
+                }
+                nodes.insert(nodes.begin() + k, temp);
+                for(k = 0; k < duplicate.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == duplicate.size())
+                {
+                    k--;
+                }
+                duplicate.insert(duplicate.begin() + k, temp);
+                if(temp->state == goal)
+                {
+                    return temp;
+                }
+            }
+            state = node->state;
         }
-        if(j < length - 1)
+        if(j < length - 1 && node->operation != "left")
         {
-            nodes.push_back(new Node(option, node->state, "right", node->cost, node));
+            state.at(i).at(j) = state.at(i).at(j + 1);
+            state.at(i).at(j + 1) = 0;
+            for(k = 0; k < duplicate.size(); k++)
+            {
+                if(state == duplicate.at(k)->state)
+                {
+                    break;
+                }
+            }
+            if(k == duplicate.size() && nodes.size() > 0)
+            {
+                temp = new Node(option, state, "right", node->cost, node);
+
+                for(k = 0; k < nodes.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == nodes.size())
+                {
+                    k--;
+                }
+                nodes.insert(nodes.begin() + k, temp);
+                for(k = 0; k < duplicate.size(); k++)
+                {
+                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
+                    {
+                        break;
+                    }
+                }
+                if(k == duplicate.size())
+                {
+                    k--;
+                }
+                duplicate.insert(duplicate.begin() + k, temp);
+                if(temp->state == goal)
+                {
+                    return temp;
+                }
+            }
         }
     } while (!nodes.empty());
 
@@ -165,43 +324,6 @@ Node * Puzzle::search(unsigned int option)
 
 Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string operation, unsigned int cost, Node * parent):state(length, std::vector<int>(length))
 {
-    unsigned int i;
-    unsigned int j;
-
-    for(i = 0; i < length; i++)
-    {
-        for(j = 0; j < length; j++)
-        {
-            if(state.at(i).at(j) == 0)
-            {
-                break;
-            }
-        }
-        if(j < length)
-        {
-            break;
-        }
-    }
-    if(operation == "up")
-    {
-        state.at(i).at(j) = state.at(i - 1).at(j);
-        state.at(i - 1).at(j) = 0;
-    }
-    else if(operation == "down")
-    {
-        state.at(i).at(j) = state.at(i + 1).at(j);
-        state.at(i + 1).at(j) = 0;
-    }
-    else if(operation == "left")
-    {
-        state.at(i).at(j) = state.at(i).at(j - 1);
-        state.at(i).at(j - 1) = 0;
-    }
-    else if(operation == "right")
-    {
-        state.at(i).at(j) = state.at(i).at(j + 1);
-        state.at(i).at(j + 1) = 0;
-    }
     this->state = state;
     this->operation = operation;
     if(parent != 0)
@@ -213,9 +335,9 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
     unsigned int goal[length][length];
     unsigned int count = 1;
 
-    for(i = 0; i < length; i++)
+    for(unsigned int i = 0; i < length; i++)
     {
-        for(j = 0; j < length; j++)
+        for(unsigned int j = 0; j < length; j++)
         {
             if(count < length * length)
             {
@@ -225,6 +347,7 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
             {
                 goal[i][j] = 0;
             }
+            count++;
         }
     }
 
@@ -232,11 +355,11 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
 
     if(option == 2)
     {
-        for(i = 0; i < length; i++)
+        for(unsigned int i = 0; i < length; i++)
         {
-            for(j = 0; j < length; j++)
+            for(unsigned int j = 0; j < length; j++)
             {
-                if(this->state.at(i).at(j) != goal[i][j])
+                if(state.at(i).at(j) != goal[i][j] && state.at(i).at(j) != 0)
                 {
                     heuristic++;
                 }
@@ -245,15 +368,15 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
     }
     else if(option == 3)
     {
-        for(i = 0; i < length; i++)
+        for(unsigned int i = 0; i < length; i++)
         {
-            for(j = 0; j < length; j++)
+            for(unsigned int j = 0; j < length; j++)
             {
                 for(unsigned int k = 0; k < length; k++)
                 {
                     for(unsigned int l = 0; l < length; l++)
                     {
-                        if(goal[i][j] == this->state.at(k).at(l))
+                        if(goal[i][j] == state.at(k).at(l) && state.at(k).at(l) != 0)
                         {
                             int row = i - k;
                             int column = j - l;
@@ -356,8 +479,26 @@ int main()
                 std::cout << std::endl;
             }
         }
+        for(unsigned int i = 0; i < length; i++)
+        {
+            for(unsigned int j = 0; j < length; j++)
+            {
+                std::cout << '[';
+                if(puzzle->initial.at(i).at(j) == 0)
+                {
+                    std::cout << ' ';
+                }
+                else
+                {
+                    std::cout << puzzle->initial.at(i).at(j);
+                }
+                std::cout << ']';
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
 
-        unsigned int option;
+        int option = -1;
 
         while(option)
         {
@@ -395,12 +536,12 @@ int main()
                             std::vector<Node *> trace(1, goal);
                             Node * pointer = goal->parent;
 
-                            while(trace.back()->parent != 0)
+                            while(pointer != 0)
                             {
                                 trace.push_back(pointer);
                                 pointer = pointer->parent;
                             }
-                            puzzle->depth = trace.size();
+                            puzzle->depth = trace.size() - 1;
                             std::cout << std::endl;
                             while(!trace.empty())
                             {
@@ -411,43 +552,62 @@ int main()
                                 else
                                 {
                                     std::cout << "Move blank " << trace.back()->operation << std::endl;
-                                    std::cout << "Expanding state with g(n) = " << trace.back()->cost << " and h(n) = " << trace.back()->heuristic << ':' << std::endl;
-                                    for(unsigned int i = 0; i < length; i++)
+                                    if(trace.front() != trace.back())
                                     {
-                                        for(unsigned int j = 0; j < length; j++)
-                                        {
-                                            std::cout << '[';
-                                            if(trace.back()->state.at(i).at(j) == 0)
-                                            {
-                                                std::cout << '0';
-                                            }
-                                            else
-                                            {
-                                                std::cout << trace.back()->state.at(i).at(j);
-                                            }
-                                            std::cout << ']';
-                                        }
-                                        std::cout << std::endl;
+                                        std::cout << "Expanding state with g(n) = " << trace.back()->cost << " and h(n) = " << trace.back()->heuristic << ':' << std::endl;
                                     }
                                 }
+                                for(unsigned int i = 0; i < length; i++)
+                                {
+                                    for(unsigned int j = 0; j < length; j++)
+                                    {
+                                        std::cout << '[';
+                                        if(trace.back()->state.at(i).at(j) == 0)
+                                        {
+                                            std::cout << ' ';
+                                        }
+                                        else
+                                        {
+                                            std::cout << trace.back()->state.at(i).at(j);
+                                        }
+                                        std::cout << ']';
+                                    }
+                                    std::cout << std::endl;
+                                }
+                                std::cout << std::endl;
                                 trace.pop_back();
                             }
-                            std::cout << std::endl << "The depth of the goal node is " << puzzle->depth;
+                            std::cout << "The depth of the goal node is " << puzzle->depth;
                         }
                         else
                         {
                             std::cout << "Solution trace unavailable due to no solution\n";
                         }
-                        std::cout << "The maximum number of nodes in the queue at any one time was " << puzzle->queue << " nodes" << std::endl;
-                        std::cout << "The search algorithm expanded a total of " << puzzle->total << " nodes";
+                        std::cout << std::endl << "The maximum number of nodes in the queue at any one time was " << puzzle->queue << " nodes" << std::endl;
+                        std::cout << "The search algorithm expanded a total of " << puzzle->total << " nodes\n" << std::endl;
                     }
                     else if(option == 2)
                     {
+                        while(!puzzle->duplicate.empty())
+                        {
+                            delete puzzle->duplicate.back();
+
+                            puzzle->duplicate.pop_back();
+                        }
+                        std::cout << std::endl;
+
                         break;
                     }
                     else if(option == 3)
                     {
+                        while(!puzzle->duplicate.empty())
+                        {
+                            delete puzzle->duplicate.back();
+                            
+                            puzzle->duplicate.pop_back();
+                        }
                         option = 0;
+                        std::cout << std::endl;
 
                         break;
                     }
