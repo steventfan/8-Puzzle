@@ -301,7 +301,7 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
 
 int main()
 {
-    std::cout << "----- Welcome to the Puzzle Solver -----\n" << std::endl;
+    std::cout << "----- Welcome to the n-Puzzle Solver -----\n" << std::endl;
 
     bool status = true;
 
