@@ -92,24 +92,22 @@ Node * Puzzle::search(unsigned int option)
             count++;
         }
     }
+    queue = 1;
     if(nodes.back()->state == goal)
     {
-        queue = 1;
-
         return nodes.back();
     }
-    queue = 0;
     total = 0;
     do
     {
-        if(queue < nodes.size())
-        {
-            queue = nodes.size();
-        }
-
         Node * node = nodes.front();
 
         nodes.erase(nodes.begin());
+        if(length == 3 && node->cost > 31 || length == 4 && node->cost > 80)
+        {
+            break;
+        }
+        total++;
 
         unsigned int i;
         unsigned int j;
@@ -130,192 +128,93 @@ Node * Puzzle::search(unsigned int option)
         }
 
         std::vector<std::vector<int>> state = node->state;
-        unsigned int k;
+        unsigned int l;
         Node * temp;
+        Node * found = 0;
 
-        total++;
-        if(i > 0 && node->operation != "down")
+        for(unsigned int k = 0; k < 4; k++)
         {
-            state.at(i).at(j) = state.at(i - 1).at(j);
-            state.at(i - 1).at(j) = 0;
-            for(k = 0; k < duplicate.size(); k++)
-            {
-                if(state == duplicate.at(k)->state)
-                {
-                    break;
-                }
-            }
-            if(k == duplicate.size())
-            {
-                temp = new Node(option, state, "up", node->cost, node);
+            std::string operation = "";
 
-                for(k = 0; k < nodes.size(); k++)
-                {
-                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
-                    {
-                        break;
-                    }
-                }
-                if(k == nodes.size() && nodes.size() > 0)
-                {
-                    k--;
-                }
-                nodes.insert(nodes.begin() + k, temp);
-                for(k = 0; k < duplicate.size(); k++)
-                {
-                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
-                    {
-                        break;
-                    }
-                }
-                if(k == duplicate.size())
-                {
-                    k--;
-                }
-                duplicate.insert(duplicate.begin() + k, temp);
-                if(temp->state == goal)
-                {
-                    return temp;
-                }
-            }
             state = node->state;
-        }
-        if(i < length - 1 && node->operation != "up")
-        {
-            state.at(i).at(j) = state.at(i + 1).at(j);
-            state.at(i + 1).at(j) = 0;
-            for(k = 0; k < duplicate.size(); k++)
+            if(k == 0 && i > 0 && node->operation != "down")
             {
-                if(state == duplicate.at(k)->state)
+                operation = "up";
+                state.at(i).at(j) = state.at(i - 1).at(j);
+                state.at(i - 1).at(j) = 0;
+            }
+            else if(k == 1 && i < length - 1 && node->operation != "up")
+            {
+                operation = "down";
+                state.at(i).at(j) = state.at(i + 1).at(j);
+                state.at(i + 1).at(j) = 0;
+            }
+            else if(k == 2 && j > 0 && node->operation != "right")
+            {
+                operation = "left";
+                state.at(i).at(j) = state.at(i).at(j - 1);
+                state.at(i).at(j - 1) = 0;
+            }
+            else if(k == 3 && j < length - 1 && node->operation != "left")
+            {
+                operation = "right";
+                state.at(i).at(j) = state.at(i).at(j + 1);
+                state.at(i).at(j + 1) = 0;
+            }
+            for(l = 0; l < duplicate.size(); l++)
+            {
+                if(state == duplicate.at(l)->state)
                 {
                     break;
                 }
             }
-            if(k == duplicate.size())
+            if(l == duplicate.size())
             {
-                temp = new Node(option, state, "down", node->cost, node);
+                temp = new Node(option, state, operation, node->cost, node);
 
-                for(k = 0; k < nodes.size(); k++)
+                for(l = 0; l < nodes.size(); l++)
                 {
-                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
+                    if(temp->cost + temp->heuristic < nodes.at(l)->cost + nodes.at(l)->heuristic)
                     {
                         break;
                     }
                 }
-                if(k == nodes.size() && nodes.size() > 0)
+                if(l == nodes.size())
                 {
-                    k--;
+                    nodes.push_back(temp);
                 }
-                nodes.insert(nodes.begin() + k, temp);
-                for(k = 0; k < duplicate.size(); k++)
+                else
                 {
-                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
+                    nodes.insert(nodes.begin() + l, temp);
+                }
+                if(queue < nodes.size())
+                {
+                    queue = nodes.size();
+                }
+                for(l = 0; l < duplicate.size(); l++)
+                {
+                    if(temp->cost + temp->heuristic < duplicate.at(l)->cost + duplicate.at(l)->heuristic)
                     {
                         break;
                     }
                 }
-                if(k == duplicate.size())
+                if(l == duplicate.size())
                 {
-                    k--;
+                    duplicate.push_back(temp);
                 }
-                duplicate.insert(duplicate.begin() + k, temp);
+                else
+                {
+                    duplicate.insert(duplicate.begin() + l, temp);
+                }
                 if(temp->state == goal)
                 {
-                    return temp;
+                    found = temp;
                 }
             }
-            state = node->state;
         }
-        if(j > 0 && node->operation != "right")
+        if(found)
         {
-            state.at(i).at(j) = state.at(i).at(j - 1);
-            state.at(i).at(j - 1) = 0;
-            for(k = 0; k < duplicate.size(); k++)
-            {
-                if(state == duplicate.at(k)->state)
-                {
-                    break;
-                }
-            }
-            if(k == duplicate.size())
-            {
-                temp = new Node(option, state, "left", node->cost, node);
-
-                for(k = 0; k < nodes.size(); k++)
-                {
-                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
-                    {
-                        break;
-                    }
-                }
-                if(k == nodes.size() && nodes.size() > 0)
-                {
-                    k--;
-                }
-                nodes.insert(nodes.begin() + k, temp);
-                for(k = 0; k < duplicate.size(); k++)
-                {
-                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
-                    {
-                        break;
-                    }
-                }
-                if(k == duplicate.size())
-                {
-                    k--;
-                }
-                duplicate.insert(duplicate.begin() + k, temp);
-                if(temp->state == goal)
-                {
-                    return temp;
-                }
-            }
-            state = node->state;
-        }
-        if(j < length - 1 && node->operation != "left")
-        {
-            state.at(i).at(j) = state.at(i).at(j + 1);
-            state.at(i).at(j + 1) = 0;
-            for(k = 0; k < duplicate.size(); k++)
-            {
-                if(state == duplicate.at(k)->state)
-                {
-                    break;
-                }
-            }
-            if(k == duplicate.size() && nodes.size() > 0)
-            {
-                temp = new Node(option, state, "right", node->cost, node);
-
-                for(k = 0; k < nodes.size(); k++)
-                {
-                    if(temp->cost + temp->heuristic < nodes.at(k)->cost + nodes.at(k)->heuristic)
-                    {
-                        break;
-                    }
-                }
-                if(k == nodes.size())
-                {
-                    k--;
-                }
-                nodes.insert(nodes.begin() + k, temp);
-                for(k = 0; k < duplicate.size(); k++)
-                {
-                    if(temp->cost + temp->heuristic < duplicate.at(k)->cost + duplicate.at(k)->heuristic)
-                    {
-                        break;
-                    }
-                }
-                if(k == duplicate.size())
-                {
-                    k--;
-                }
-                duplicate.insert(duplicate.begin() + k, temp);
-                if(temp->state == goal)
-                {
-                    return temp;
-                }
-            }
+            return found;
         }
     } while (!nodes.empty());
 
@@ -531,18 +430,18 @@ int main()
                     std::cin >> option;
                     if(option == 1)
                     {
+                        std::cout << std::endl;
                         if(goal)
                         {
                             std::vector<Node *> trace(1, goal);
                             Node * pointer = goal->parent;
 
+                            puzzle->depth = goal->cost;
                             while(pointer != 0)
                             {
                                 trace.push_back(pointer);
                                 pointer = pointer->parent;
                             }
-                            puzzle->depth = trace.size() - 1;
-                            std::cout << std::endl;
                             while(!trace.empty())
                             {
                                 if(trace.back()->parent == 0)
