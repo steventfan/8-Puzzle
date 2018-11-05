@@ -451,10 +451,15 @@ int main()
                                 else
                                 {
                                     std::cout << "Move blank " << trace.back()->operation << std::endl;
-                                    if(trace.front() != trace.back())
+                                    if(trace.front() == trace.back())
                                     {
-                                        std::cout << "Expanding state with g(n) = " << trace.back()->cost << " and h(n) = " << trace.back()->heuristic << ':' << std::endl;
+                                        std::cout << 'S';
                                     }
+                                    else
+                                    {
+                                        std::cout << "Expanding s";
+                                    }
+                                    std::cout << "tate with g(n) = " << trace.back()->cost << " and h(n) = " << trace.back()->heuristic << ':' << std::endl;
                                 }
                                 for(unsigned int i = 0; i < length; i++)
                                 {
