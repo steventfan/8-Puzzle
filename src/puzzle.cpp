@@ -9,11 +9,11 @@ class Node;
 class Puzzle
 {
     public:
-        std::vector<std::vector<int>> initial;
-        unsigned int depth;
-        unsigned int queue;
-        unsigned int total;
-        std::vector<Node *> duplicate;
+        std::vector<std::vector<int>> initial;// ***** Initial puzzle state *****
+        unsigned int depth;// ***** Depth of path to solution *****
+        unsigned int queue;// ***** Maximum number of nodes in queue *****
+        unsigned int total;// ***** Total number of nodes expanded *****
+        std::vector<Node *> duplicate;// ***** Puzzle states already visited *****
 
         Puzzle();
         ~Puzzle();
@@ -24,11 +24,11 @@ class Node
 {
     friend class Puzzle;
     public:
-        std::vector<std::vector<int>> state;
-        std::string operation;
-        unsigned int cost;
-        unsigned int heuristic;
-        Node * parent;
+        std::vector<std::vector<int>> state;// ***** Puzzle state of node *****
+        std::string operation;// ***** Blank movement type *****
+        unsigned int cost;// ***** Cumulative cost of node *****
+        unsigned int heuristic;// ***** Heuristic value of node *****
+        Node * parent;// ***** Parent of node *****
     private:
         Node(unsigned int, std::vector<std::vector<int>>, std::string, unsigned int, Node *);
 };
@@ -77,7 +77,7 @@ Node * Puzzle::search(unsigned int option)
     std::vector<std::vector<int>> goal(length, std::vector<int>(length));
     unsigned int count = 1;
 
-    for(unsigned int i = 0; i < length; i++)
+    for(unsigned int i = 0; i < length; i++)// ***** Initialize goal state *****
     {
         for(unsigned int j = 0; j < length; j++)
         {
@@ -98,21 +98,21 @@ Node * Puzzle::search(unsigned int option)
         return nodes.back();
     }
     total = 0;
-    do
+    do// ***** Start of search algorithm *****
     {
         Node * node = nodes.front();
 
         nodes.erase(nodes.begin());
-        if(length == 3 && node->cost > 31 || length == 4 && node->cost > 80)
+        if(length == 3 && node->cost > 31 || length == 4 && node->cost > 80)// ***** Limit depth search *****
         {
             break;
         }
-        total++;
+        total++;// ***** Update total nodes expanded *****
 
         unsigned int i;
         unsigned int j;
 
-        for(i = 0; i < length; i++)
+        for(i = 0; i < length; i++)// ***** Find blank tile *****
         {
             for(j = 0; j < length; j++)
             {
@@ -132,7 +132,7 @@ Node * Puzzle::search(unsigned int option)
         Node * temp;
         Node * found = 0;
 
-        for(unsigned int k = 0; k < 4; k++)
+        for(unsigned int k = 0; k < 4; k++)// ***** Expand node for all four directions *****
         {
             std::string operation = "";
 
@@ -161,7 +161,7 @@ Node * Puzzle::search(unsigned int option)
                 state.at(i).at(j) = state.at(i).at(j + 1);
                 state.at(i).at(j + 1) = 0;
             }
-            for(l = 0; l < duplicate.size(); l++)
+            for(l = 0; l < duplicate.size(); l++)// ***** Check for duplicates *****
             {
                 if(state == duplicate.at(l)->state)
                 {
@@ -172,7 +172,7 @@ Node * Puzzle::search(unsigned int option)
             {
                 temp = new Node(option, state, operation, node->cost, node);
 
-                for(l = 0; l < nodes.size(); l++)
+                for(l = 0; l < nodes.size(); l++)// ***** Sort and push into sorted nodes vector *****
                 {
                     if(temp->cost + temp->heuristic < nodes.at(l)->cost + nodes.at(l)->heuristic)
                     {
@@ -187,11 +187,11 @@ Node * Puzzle::search(unsigned int option)
                 {
                     nodes.insert(nodes.begin() + l, temp);
                 }
-                if(queue < nodes.size())
+                if(queue < nodes.size())// ***** Update maximum number of nodes in queue *****
                 {
                     queue = nodes.size();
                 }
-                for(l = 0; l < duplicate.size(); l++)
+                for(l = 0; l < duplicate.size(); l++)// ***** Sort and push into sorted duplicates vector *****
                 {
                     if(temp->cost + temp->heuristic < duplicate.at(l)->cost + duplicate.at(l)->heuristic)
                     {
@@ -234,7 +234,7 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
     unsigned int goal[length][length];
     unsigned int count = 1;
 
-    for(unsigned int i = 0; i < length; i++)
+    for(unsigned int i = 0; i < length; i++)// ***** Initialize goal state *****
     {
         for(unsigned int j = 0; j < length; j++)
         {
@@ -252,7 +252,7 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
 
     unsigned int heuristic = 0;
 
-    if(option == 2)
+    if(option == 2)// ***** Calculate heuristic for misplaced tile *****
     {
         for(unsigned int i = 0; i < length; i++)
         {
@@ -265,7 +265,7 @@ Node::Node(unsigned int option, std::vector<std::vector<int>> state, std::string
             }
         }
     }
-    else if(option == 3)
+    else if(option == 3)// ***** Calculate heuristic for Manhattan distance *****
     {
         for(unsigned int i = 0; i < length; i++)
         {
@@ -309,11 +309,11 @@ int main()
     {
         Puzzle * puzzle = new Puzzle();
 
-        for(unsigned int i = 0; i < length; i++)// ***** Initialize puzzle *****
+        for(unsigned int i = 0; i < length; i++)// ***** Initialize initial puzzle tiles *****
         {
             for(int j = 0; j < length; j++)
             {
-                for(unsigned int k = 0; k < length; k++)// ***** Check for duplicate values *****
+                for(unsigned int k = 0; k < length; k++)// ***** Output puzzle *****
                 {
                     for(unsigned int l = 0; l < length; l++)
                     {
@@ -346,7 +346,7 @@ int main()
                     unsigned int k;
                     unsigned int l;
 
-                    for(k = 0; k < length; k++)
+                    for(k = 0; k < length; k++)// ***** Check for duplicate values *****
                     {
                         for(l = 0; l < length; l++)
                         {
@@ -378,7 +378,7 @@ int main()
                 std::cout << std::endl;
             }
         }
-        for(unsigned int i = 0; i < length; i++)
+        for(unsigned int i = 0; i < length; i++)// ***** Output puzzle *****
         {
             for(unsigned int j = 0; j < length; j++)
             {
@@ -401,7 +401,7 @@ int main()
 
         while(option)
         {
-            std::cout << "----- Enter Solver Algorithm -----\n";
+            std::cout << "----- Enter Search Algorithm -----\n";
             std::cout << "[1] Uniform Cost Search\n";
             std::cout << "[2] A* with Misplaced Tile Heuristic\n";
             std::cout << "[3] A* with Manhattan Distance Heuristic" << std::endl;
@@ -428,7 +428,7 @@ int main()
                     std::cout << "[4] Exit Program" << std::endl;
                     std::cout << "> ";
                     std::cin >> option;
-                    if(option == 1)
+                    if(option == 1)// ***** Trace and output solution path *****
                     {
                         std::cout << std::endl;
                         if(goal)
@@ -487,7 +487,7 @@ int main()
                     }
                     else if(option == 2)
                     {
-                        while(!puzzle->duplicate.empty())
+                        while(!puzzle->duplicate.empty())// ***** Deallocate nodes for new search algorithm *****
                         {
                             delete puzzle->duplicate.back();
 
@@ -499,12 +499,6 @@ int main()
                     }
                     else if(option == 3)
                     {
-                        while(!puzzle->duplicate.empty())
-                        {
-                            delete puzzle->duplicate.back();
-                            
-                            puzzle->duplicate.pop_back();
-                        }
                         option = 0;
                         std::cout << std::endl;
 
